@@ -90,12 +90,12 @@ function Compress-S3 {
 				$UploadFile = Get-Item $_
 			}
 
-			$S3Key = "$KeyPrefix/$($UploadFile.Name)"
+			$S3Key = Join-Path $KeyPrefix $(Resolve-Path $UploadFile.FullName -Relative).Substring(1)
 
 			$WriteS3ObjectParams = @{
 				BucketName = $BucketName;
 				Key = $S3Key;
-				File = $UploadFile.Name
+				File = $UploadFile.FullName
 			}
 			Write-Debug "Uploading $($WriteS3ObjectParams.File) to bucket $($WriteS3ObjectParams.BucketName) under key $($WriteS3ObjectParams.Key)"
 			Write-S3Object @WriteS3ObjectParams
