@@ -106,32 +106,32 @@ function Invoke-SqlRestoreFromS3 {
 
 	Write-Verbose "Checking to see if TempFilePath specified"
 	if ([String]::IsNullOrEmpty($TempFilePath)) {
-		Write-Debug "TempFilePath not set, using server's directory"
+		Write-Verbose "TempFilePath not set, using server's directory"
 		$TempFilePath = $SqlServer.BackupDirectory
-		Write-Debug "TempFilePath set to $($TempFilePath)"
+		Write-Verbose "TempFilePath set to $($TempFilePath)"
 	}
 	else {
 		Write-Verbose "TempFilePath specified, $TempFilePath"
 	}
 
-	Write-Debug "Checking to see if TempFilePath exists"
+	Write-Verbose "Checking to see if TempFilePath exists"
 	if (-not $(Test-Path $TempFilePath)) {
 		throw "Could not find TempFilePath: $($TempFilePath)"
 	}
 
 	$FilePath = Join-Path $TempFilePath $(Split-Path -Leaf $Key)
 
-	Write-Debug "Checking to see if temp file already exists"
+	Write-Verbose "Checking to see if temp file already exists"
 	if ($(Test-Path $FilePath) -and -not ($Overwrite)) {
 		throw "Temp file already exists: $($FilePath)"
 	}
 
-	Write-Debug "Checking to see if S3 bucket exists"
+	Write-Verbose "Checking to see if S3 bucket exists"
 	if (-not $(Test-S3Bucket -BucketName $BucketName)) {
 		throw "S3 bucket does not exist: $($BucketName)"
 	}
 
-	Write-Debug "Reading from $($BucketName)/$($Key) to $($FilePath)"
+	Write-Verbose "Reading from $($BucketName)/$($Key) to $($FilePath)"
 	Read-S3Object -BucketName $BucketName -Key $Key -File $FilePath -Region $Region
 
 	$Parameters = @{
@@ -141,11 +141,11 @@ function Invoke-SqlRestoreFromS3 {
 		Action = $Action;
 		Force = $Force
 	}
-	Write-Debug "Restoring backup"
+	Write-Verbose "Restoring backup"
 	Invoke-SqlRestore @Parameters
 
 	if ($Clean) {
-		Write-Debug "Removing temp backup: $($FilePath)"
+		Write-Verbose "Removing temp backup: $($FilePath)"
 		Remove-Item $FilePath
 	}
 
