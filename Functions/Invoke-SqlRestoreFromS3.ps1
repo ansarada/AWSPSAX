@@ -100,11 +100,18 @@ function Invoke-SqlRestoreFromS3 {
 		    throw "No Region specified and no default set"
 		}
 	}
+	else {
+		Write-Verbose "Region specified, $Region"
+	}
 
+	Write-Verbose "Checking to see if TempFilePath specified"
 	if ([String]::IsNullOrEmpty($TempFilePath)) {
 		Write-Debug "TempFilePath not set, using server's directory"
 		$TempFilePath = $SqlServer.BackupDirectory
 		Write-Debug "TempFilePath set to $($TempFilePath)"
+	}
+	else {
+		Write-Verbose "TempFilePath specified, $TempFilePath"
 	}
 
 	Write-Debug "Checking to see if TempFilePath"
