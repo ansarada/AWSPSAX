@@ -140,8 +140,14 @@ function Invoke-SqlBackupToS3 {
 	$FilePath = Join-Path $TempFilePath $(Split-Path -Leaf $Key)
 
 	Write-Debug "Checking to see if temp file already exists"
-	if ($(Test-Path $FilePath) -and -not ($Overwrite)) {
-		throw "Temp file already exists: $($FilePath)"
+	if (Test-Path $FilePath) {
+		if ($Overwrite) {
+			Write-Debug "Temp file ($FilePath) already exists, deleting"
+			Remove-Item -Force $FilePath
+		}
+		else {
+			throw "Temp file already exists: $($FilePath)"
+		}
 	}
 
 	Write-Debug "Checking to see if S3 bucket exists"
