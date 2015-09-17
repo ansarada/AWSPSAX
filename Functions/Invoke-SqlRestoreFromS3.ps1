@@ -114,7 +114,7 @@ function Invoke-SqlRestoreFromS3 {
 		Write-Verbose "TempFilePath specified, $TempFilePath"
 	}
 
-	Write-Debug "Checking to see if TempFilePath"
+	Write-Debug "Checking to see if TempFilePath exists"
 	if (-not $(Test-Path $TempFilePath)) {
 		throw "Could not find TempFilePath: $($TempFilePath)"
 	}
