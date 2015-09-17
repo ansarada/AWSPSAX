@@ -1,4 +1,7 @@
 function New-CustomEC2Image {
+
+	[cmdletbinding()]
+
 	param(
 	    [parameter(Mandatory=$true)]
 	    [string]

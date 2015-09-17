@@ -38,6 +38,9 @@
 #>
 
 function Invoke-SqlRestoreFromS3 {
+
+	[cmdletbinding()]
+
 	param(
 		[parameter(Mandatory=$true)]
 		[Microsoft.SqlServer.Management.Smo.Server]

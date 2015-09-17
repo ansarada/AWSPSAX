@@ -47,6 +47,9 @@
 #>
 
 function Invoke-SqlBackupToS3 {
+
+	[cmdletbinding()]
+
 	param(
 		[parameter(Mandatory=$true)]
 		[Microsoft.SqlServer.Management.Smo.Server]

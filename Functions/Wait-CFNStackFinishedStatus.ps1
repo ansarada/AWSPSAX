@@ -15,6 +15,9 @@
 #>
 
 function Wait-CFNStackFinishedStatus {
+
+	[cmdletbinding()]
+
 	param(
 		[parameter(Mandatory=$true)]
 		[String]
