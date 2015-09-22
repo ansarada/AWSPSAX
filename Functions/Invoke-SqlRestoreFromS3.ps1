@@ -132,14 +132,59 @@ function Invoke-SqlRestoreFromS3 {
 	}
 
 	Write-Verbose "Reading from $($BucketName)/$($Key) to $($FilePath)"
-	Read-S3Object -BucketName $BucketName -Key $Key -File $FilePath -Region $Region
+	Read-S3Object -BucketName $BucketName -Key $Key -File $FilePath -Region $Region | Out-Null
 
+	Write-Verbose "Creating SMO Restore object"
+	$Restore = New-Object Microsoft.SqlServer.Management.SMO.Restore
+
+	Write-Verbose "Creating SMO BackupDeviceItem object based on $FilePath"
+	$BackupDeviceItem = New-Object Microsoft.SqlServer.Management.SMO.BackupDeviceItem($FilePath, [Microsoft.SqlServer.Management.SMO.DeviceType]::File)
+
+	Write-Verbose "Adding BackupDeviceItem to Restore as device"
+	$Restore.Devices.Add($BackupDeviceItem)
+
+	Write-Verbose "Reading database files from backup file using server $($SqlServer.InstanceName)"
+	$DatabaseFiles = $Restore.ReadFileList($SqlServer)
+
+	$RelocateFiles = @{}
+
+	Write-Verbose "Checking to see if the locations in the physical names exist"
+	foreach ($DatabaseFile in $DatabaseFiles.Rows){
+		$DatabaseFileParentPath = Split-Path $DatabaseFile.PhysicalName
+		Write-Verbose "DatabaseFile $($DatabaseFile.LogicalName) parent is $DatabaseFileParentPath, from $($DatabaseFile.PhysicalName)"
+
+		Write-Verbose "Checking to see if DatabaseFile ($($DatabaseFile.LogicalName)) parent path exists"
+		if (Test-Path $DatabaseFileParentPath) {
+			Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) parent exists"
+			$NewPhysicalName = $DatabaseFile.PhysicalName
+		}
+		else {
+
+			Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) parent path does NOT exist, getting file type"
+			if ($DatabaseFile.Type -eq 'D') {
+				$NewPhysicalName = Join-Path $SqlServer.DefaultFile $(Split-Path $PhysicalName -leaf)
+				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a data file, moving to $NewPhysicalName"
+			}
+			elseif ($DatabaseFile.Type -eq 'L') {
+				$NewPhysicalName = Join-Path $SqlServer.DefaultLog $(Split-Path $PhysicalName -leaf)
+				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a log file, moving to $NewPhysicalName"
+			}
+			else {
+				throw "Unknown file type '$($DatabaseFile.Type)' for file $($DatabaseFile.LogicalName)"
+			}
+
+		}
+		$RelocateFiles.Add($DatabaseFile.LogicalName, $NewPhysicalName)
+	}
+
+	Write-Verbose "Define parameters for restore"
 	$Parameters = @{
 		SqlServer = $SqlServer;
 		DBName = $DBName;
 		FilePath = $FilePath;
 		Action = $Action;
-		Force = $Force
+		Force = $Force;
+		RelocateFiles = $RelocateFiles;
 	}
 	Write-Verbose "Restoring backup"
 	Invoke-SqlRestore @Parameters
