@@ -162,11 +162,11 @@ function Invoke-SqlRestoreFromS3 {
 
 			Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) parent path does NOT exist, getting file type"
 			if ($DatabaseFile.Type -eq 'D') {
-				$NewPhysicalName = Join-Path $SqlServer.DefaultFile $(Split-Path $PhysicalName -leaf)
+				$NewPhysicalName = Join-Path $SqlServer.DefaultFile $(Split-Path $DatabaseFile.PhysicalName -leaf)
 				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a data file, moving to $NewPhysicalName"
 			}
 			elseif ($DatabaseFile.Type -eq 'L') {
-				$NewPhysicalName = Join-Path $SqlServer.DefaultLog $(Split-Path $PhysicalName -leaf)
+				$NewPhysicalName = Join-Path $SqlServer.DefaultLog $(Split-Path $DatabaseFile.PhysicalName -leaf)
 				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a log file, moving to $NewPhysicalName"
 			}
 			else {
