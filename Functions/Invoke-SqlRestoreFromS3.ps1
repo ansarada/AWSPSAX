@@ -81,7 +81,11 @@ function Invoke-SqlRestoreFromS3 {
 
 		[parameter()]
 		[switch]
-		$Force
+		$Force,
+
+		[parameter()]
+		[string]
+		$FilenameSuffix
 	)
 
 	Write-Verbose "Saving SqlServer StatementTimeout ($($SqlServer.ConnectionContext.StatementTimeout))"
@@ -150,31 +154,41 @@ function Invoke-SqlRestoreFromS3 {
 
 	Write-Verbose "Checking to see if the locations in the physical names exist"
 	foreach ($DatabaseFile in $DatabaseFiles.Rows){
+
+		$OldFilename = Split-Path -Leaf $DatabaseFile.PhysicalName
+		$NewFilename = @(
+			[System.IO.Path]::GetFileNameWithoutExtension($OldFilename),
+			[String]::IsNullOrEmpty($FilenameSuffix) ? '' : "_$FilenameSuffix",
+			[System.IO.Path]::GetExtension($OldFilename)
+		) -join ''
+
 		$DatabaseFileParentPath = Split-Path $DatabaseFile.PhysicalName
 		Write-Verbose "DatabaseFile $($DatabaseFile.LogicalName) parent is $DatabaseFileParentPath, from $($DatabaseFile.PhysicalName)"
 
 		Write-Verbose "Checking to see if DatabaseFile ($($DatabaseFile.LogicalName)) parent path exists"
 		if (Test-Path $DatabaseFileParentPath) {
 			Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) parent exists"
-			$NewPhysicalName = $DatabaseFile.PhysicalName
+			$NewPhysicalPath = $DatabaseFileParentPath
 		}
 		else {
-
 			Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) parent path does NOT exist, getting file type"
 			if ($DatabaseFile.Type -eq 'D') {
-				$NewPhysicalName = Join-Path $SqlServer.DefaultFile $(Split-Path $DatabaseFile.PhysicalName -leaf)
-				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a data file, moving to $NewPhysicalName"
+				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a data file"
+				$NewPhysicalPath = $SqlServer.DefaultFile
 			}
 			elseif ($DatabaseFile.Type -eq 'L') {
-				$NewPhysicalName = Join-Path $SqlServer.DefaultLog $(Split-Path $DatabaseFile.PhysicalName -leaf)
-				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a log file, moving to $NewPhysicalName"
+				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a log file"
+				$NewPhysicalPath = $SqlServer.DefaultLog
 			}
 			else {
 				throw "Unknown file type '$($DatabaseFile.Type)' for file $($DatabaseFile.LogicalName)"
 			}
-
 		}
-		$RelocateFiles.Add($DatabaseFile.LogicalName, $NewPhysicalName)
+
+		$NewPhysicalFullName = Join-Path $NewPhysicalPath $NewFilename
+		Write-Verbose "Moving the DatabaseFile to $NewPhysicalFullName"
+
+		$RelocateFiles.Add($DatabaseFile.LogicalName, $NewPhysicalFullName)
 	}
 
 	Write-Verbose "Define parameters for restore"
