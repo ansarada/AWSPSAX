@@ -158,7 +158,7 @@ function Invoke-SqlRestoreFromS3 {
 		$OldFilename = Split-Path -Leaf $DatabaseFile.PhysicalName
 		$NewFilename = @(
 			[System.IO.Path]::GetFileNameWithoutExtension($OldFilename),
-			[String]::IsNullOrEmpty($FilenameSuffix) ? '' : "_$FilenameSuffix",
+			$(if ([String]::IsNullOrEmpty($FilenameSuffix)) { '' } else { "_$FilenameSuffix" }),
 			[System.IO.Path]::GetExtension($OldFilename)
 		) -join ''
 
