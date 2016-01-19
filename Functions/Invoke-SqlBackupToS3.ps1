@@ -20,6 +20,9 @@
 	.Parameter TempFilePath
 	The place to write the backup to. If left blank then the backup directory for the SQL server is used.
 
+	.Parameter TempFileSuffix
+	The suffix to be appended to the database backup file
+
 	.Parameter Overwrite
 	Set if you want overwrite the temporary backup or S3 object if they already exist.
 
@@ -76,6 +79,10 @@ function Invoke-SqlBackupToS3 {
 		$TempFilePath,
 
 		[parameter()]
+		[string]
+		$TempFileSuffix,
+
+		[parameter()]
 		[switch]
 		$Overwrite,
 
@@ -127,22 +134,27 @@ function Invoke-SqlBackupToS3 {
 	}
 
 	if ([String]::IsNullOrEmpty($TempFilePath)) {
-		Write-Debug "TempFilePath not set, using server's directory"
+		Write-Verbose "TempFilePath not set, using server's directory"
 		$TempFilePath = $SqlServer.BackupDirectory
-		Write-Debug "TempFilePath set to $($TempFilePath)"
+		Write-Verbose "TempFilePath set to $($TempFilePath)"
 	}
 
-	Write-Debug "Checking to see if TempFilePath"
+	Write-Verbose "Checking to see if TempFilePath"
 	if (-not $(Test-Path $TempFilePath)) {
 		throw "Could not find TempFilePath: $($TempFilePath)"
 	}
 
-	$FilePath = Join-Path $TempFilePath $(Split-Path -Leaf $Key)
+	$Filename = @(
+		[System.IO.Path]::GetFileNameWithoutExtension($Key),
+		$(if ([String]::IsNullOrEmpty($TempFileSuffix)) { [String]::Empty } else { "_$TempFileSuffix" }),
+		[System.IO.Path]::GetExtension($Key)
+	) -join ''
+	$FilePath = Join-Path $TempFilePath $Filename
 
-	Write-Debug "Checking to see if temp file already exists"
+	Write-Verbose "Checking to see if temp file already exists"
 	if (Test-Path $FilePath) {
 		if ($Overwrite) {
-			Write-Debug "Temp file ($FilePath) already exists, deleting"
+			Write-Verbose "Temp file ($FilePath) already exists, deleting"
 			Remove-Item -Force $FilePath
 		}
 		else {
@@ -150,21 +162,21 @@ function Invoke-SqlBackupToS3 {
 		}
 	}
 
-	Write-Debug "Checking to see if S3 bucket exists"
+	Write-Verbose "Checking to see if S3 bucket exists"
 	if (-not $(Test-S3Bucket -BucketName $BucketName)) {
 		throw "S3 bucket does not exist: $($BucketName)"
 	}
 
-	Write-Debug "Getting bucket versioning status"
+	Write-Verbose "Getting bucket versioning status"
 	$BucketVersioning = Get-S3BucketVersioning -BucketName $BucketName -Region $Region
 	$BucketVersioningEnabled = $BucketVersioning.Status -eq [Amazon.S3.VersionStatus]::Enabled
 
-	Write-Debug "Checking to see if S3 object exists"
+	Write-Verbose "Checking to see if S3 object exists"
 	if ($(Get-S3Object -BucketName $BucketName -Key $Key -Region $Region) -and -not ($Overwrite -or $BucketVersioningEnabled)) {
 		throw "S3 object already exists: $BucketName/$Key"
 	}
 
-	Write-Debug "Connecting to S3 bucket"
+	Write-Verbose "Connecting to S3 bucket"
 	$Bucket = Get-S3Bucket -BucketName $BucketName -Region $Region
 	if ($Bucket) {
 		Write-Verbose "Connected to bucket $($Bucket.BucketName)"
@@ -185,14 +197,14 @@ function Invoke-SqlBackupToS3 {
 		CopyOnly = $CopyOnly
 	}
 
-	Write-Debug "Creating backup"
+	Write-Verbose "Creating backup"
 	Invoke-SqlBackup @Parameters
 
-	Write-Debug "Writing $($FilePath) to $($BucketName)/$($Key)"
+	Write-Verbose "Writing $($FilePath) to $($BucketName)/$($Key)"
 	Write-S3Object -BucketName $BucketName -Key $Key -File $FilePath -Region $Region
 
 	if ($Clean) {
-		Write-Debug "Removing temp backup: $($FilePath)"
+		Write-Verbose "Removing temp backup: $($FilePath)"
 		Remove-Item $FilePath
 	}
 

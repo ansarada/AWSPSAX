@@ -20,6 +20,9 @@
 	.Parameter TempFilePath
 	The place to write the backup to. If left blank then the backup directory for the SQL server is used.
 
+	.Parameter TempFileSuffix
+	The suffix to be appended to the database backup file
+
 	.Parameter Overwrite
 	Set if you want overwrite the temporary backup or S3 object if they already exist.
 
@@ -65,6 +68,10 @@ function Invoke-SqlRestoreFromS3 {
 		[parameter()]
 		[string]
 		$TempFilePath,
+
+		[parameter()]
+		[string]
+		$TempFileSuffix,
 
 		[parameter()]
 		[switch]
@@ -123,7 +130,12 @@ function Invoke-SqlRestoreFromS3 {
 		throw "Could not find TempFilePath: $($TempFilePath)"
 	}
 
-	$FilePath = Join-Path $TempFilePath $(Split-Path -Leaf $Key)
+	$Filename = @(
+		[System.IO.Path]::GetFileNameWithoutExtension($Key),
+		$(if ([String]::IsNullOrEmpty($TempFileSuffix)) { [String]::Empty } else { "_$TempFileSuffix" }),
+		[System.IO.Path]::GetExtension($Key)
+	) -join ''
+	$FilePath = Join-Path $TempFilePath $Filename
 
 	Write-Verbose "Checking to see if temp file already exists"
 	if ($(Test-Path $FilePath) -and -not ($Overwrite)) {
@@ -210,4 +222,6 @@ function Invoke-SqlRestoreFromS3 {
 
 	Write-Verbose "Restoring SqlServer StatementTimeout to $($StatementTimeout) seconds"
 	$SqlServer.ConnectionContext.StatementTimeout = $StatementTimeout
+
+
 }
