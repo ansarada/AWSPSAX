@@ -1,13 +1,33 @@
-$here = Split-Path -Parent $MyInvocation.MyCommand.Path
-$sut = (Split-Path -Leaf $MyInvocation.MyCommand.Path).Replace(".Tests.", ".")
-. "$here\$sut"
+#requires -Version 3 -Modules AWSPowerShell
+
+$currentDirectory = Split-Path -Parent $PSCommandPath
+$sourceFile = (Split-Path -Leaf $PSCommandPath).Replace(".Tests.", ".")
+. "$currentDirectory\$sourceFile"
 
 Describe "Get-MyAWSRegion" {
-	Mock Invoke-RestMethod { return 'regionA' }
 
-	$result = Get-MyAWSRegion
+    It "An internal error should throw an exception" {
 
-	It "returns region" {
-		$result | Should be 'region'
+        Mock -CommandName Invoke-RestMethod -MockWith {throw}
+
+        { Get-MyAWSRegion } | Should throw
+	}
+
+    It "With mock checking for null" {
+
+        Mock -CommandName Invoke-RestMethod -MockWith {$null}
+
+        {Get-MyAWSRegion} | Should throw
+	}
+	
+	It "With mock checking return value" {
+
+        $mockObject = New-Object PSCustomObject
+        $mockObject | Add-Member -MemberType NoteProperty –Name "region" –Value "regionA"
+        $actualOutput = "regionA"
+
+        Mock -CommandName Invoke-RestMethod -MockWith {$mockObject}
+
+        Get-MyAWSRegion | Should Be $actualOutput
 	}
 }
