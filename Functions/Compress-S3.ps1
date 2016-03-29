@@ -110,7 +110,7 @@ function Compress-S3 {
 			}
 
 			Write-Debug "Writing S3 key ($S3Key) to $S3KeyFilename"
-			$S3Key | Add-Content $S3KeyFilename
+			$S3Key | Out-File $S3KeyFilename
 		}
 	}
 }
