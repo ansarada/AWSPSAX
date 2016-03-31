@@ -187,10 +187,20 @@ function Invoke-SqlRestoreFromS3 {
 			if ($DatabaseFile.Type -eq 'D') {
 				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a data file"
 				$NewPhysicalPath = $SqlServer.DefaultFile
+				Write-Verbose "Checking to see if NewPhysicalPath is null/empty"
+				if ([String]::IsNullOrEmpty($NewPhysicalPath)) {
+					Write-Verbose "Is null/empty, using MasterDBPath"
+					$NewPhysicalPath = $SqlServer.MasterDBPath
+				}
 			}
 			elseif ($DatabaseFile.Type -eq 'L') {
 				Write-Verbose "DatabaseFile ($($DatabaseFile.LogicalName)) is a log file"
 				$NewPhysicalPath = $SqlServer.DefaultLog
+				Write-Verbose "Checking to see if NewPhysicalPath is null/empty"
+				if ([String]::IsNullOrEmpty($NewPhysicalPath)) {
+					Write-Verbose "Is null/empty, using MasterDBLogPath"
+					$NewPhysicalPath = $SqlServer.MasterDBLogPath
+				}
 			}
 			else {
 				throw "Unknown file type '$($DatabaseFile.Type)' for file $($DatabaseFile.LogicalName)"
