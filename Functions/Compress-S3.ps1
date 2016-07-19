@@ -90,7 +90,7 @@ function Compress-S3 {
 				$UploadFile = Get-Item $_
 			}
 
-			$S3Key = Join-Path $KeyPrefix $(Resolve-Path $UploadFile.FullName -Relative).Substring(1)
+			$S3Key = (Join-Path $KeyPrefix $(Resolve-Path $UploadFile.FullName -Relative).Substring(1)).Replace('\', '/')
 
 			$WriteS3ObjectParams = @{
 				BucketName = $BucketName;
