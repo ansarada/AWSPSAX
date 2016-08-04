@@ -37,7 +37,10 @@ function Edit-VolumeTagsOfInstance
         # associated with this current ec2 will be applied.
         [ValidateNotNullOrEmpty()]
         [Array]
-        $Tags
+        $Tags,
+        
+        # Pass in the log object if you wish write to a log file. See Start-Log and Write-Log functions
+        $log
     )
 
     $actualInstanceID = [string]::Empty
@@ -49,14 +52,29 @@ function Edit-VolumeTagsOfInstance
     }
     else
     {
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "Getting instance ID could not be determined";
+            }
+        }
         $actualInstanceID = invoke-restmethod -uri http://169.254.169.254/latest/meta-data/instance-id
     }
 
     if ([string]::IsNullOrEmpty($actualInstanceID))
     {
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "The actual instance ID could not be determined";
+            }
+        }
         throw "The actual instance ID could not be determined"
     }
-
+    
+    if ($log){
+        Write-Log -Log $log -LogData @{
+            message = "Updating volume tags of instnace $actualInstanceID";
+        }
+    }
     Write-host "Updating volume tags of instnace $actualInstanceID"
 
     if ($Tags)
@@ -65,6 +83,11 @@ function Edit-VolumeTagsOfInstance
     }
     else
     {
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "Getting current EC2 Tags";
+            }
+        }
         $currentEC2Tags = Get-EC2Tag -Filter @{ Name="resource-id";Values=$actualInstanceID} 
         $listedTags = $currentEC2Tags | Where {$_.key -notlike "aws*"} 
 	
@@ -83,6 +106,11 @@ function Edit-VolumeTagsOfInstance
 
     if ($actualTags.Count -le 0)
     {
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "No tag was identified for update. Method returns now.";
+            }
+        }
         write-host "No tag was identified for update. Method returns now."
         return
     }
@@ -92,6 +120,11 @@ function Edit-VolumeTagsOfInstance
 
     if ($instanceAttributes -isnot [Amazon.EC2.Model.InstanceAttribute])
     {
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "Get-EC2InstanceAttribute did not return Amazon.EC2.Model.InstanceAttribute object";
+            }
+        }
         throw "Get-EC2InstanceAttribute did not return Amazon.EC2.Model.InstanceAttribute object"
     }
 
@@ -103,7 +136,11 @@ function Edit-VolumeTagsOfInstance
         $volumeId = $_.Ebs.VolumeId
         
         Write-host "Updating tags for volume $volumeId"
-
+        if ($log){
+            Write-Log -Log $log -LogData @{
+                message = "Updating tags for volume $volumeId";
+            }
+        }
         New-EC2Tag -Resources $volumeId -Tags $actualTags 
     }# Add tags to volumes associated with the EC2 using Amazon.EC2.Model.EbsInstanceBlockDevice 
 
