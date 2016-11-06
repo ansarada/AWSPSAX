@@ -95,6 +95,9 @@ function Invoke-SqlRestoreFromS3 {
 		$FilenameSuffix
 	)
 
+    Write-Verbose "Importing module SQLServer"
+    Import-Module SQLServer
+
 	Write-Verbose "Saving SqlServer StatementTimeout ($($SqlServer.ConnectionContext.StatementTimeout))"
 	$StatementTimeout = $SqlServer.ConnectionContext.StatementTimeout
 	Write-Verbose "Setting SqlServer StatementTimeout"
