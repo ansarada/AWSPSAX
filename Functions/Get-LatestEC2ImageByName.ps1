@@ -28,8 +28,18 @@ function Get-LatestEC2ImageByName {
 		[Parameter()]
 		[ValidateNotNullOrEmpty()]
 		[String]
-		$ExecutableUser = 'self'
+		$ExecutableUser = 'self',
+
+		# Name of AWS profile to use
+		[parameter()]
+		[string]
+		$AWSProfileName
 	)
+
+	if ($AWSProfileName) {
+		Write-Verbose "Setting AWS profile to $AWSProfileName"
+		Set-AWSCredentials -ProfileName $AWSProfileName
+	}
 
 	Write-Verbose "Searching for AMI with name matching $Pattern executable by $ExecutableUser"
 

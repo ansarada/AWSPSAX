@@ -47,6 +47,9 @@
 	.Parameter CopyOnly
 	Refer to Invoke-SqlBackup (http://files.powershellstation.com/SQLPSX/Invoke-SqlBackup.htm) and CopyOnly (http://technet.microsoft.com/en-us/library/microsoft.sqlserver.management.smo.backup.copyonly.aspx).
 
+	.Parameter AWSProfileName
+	AWS profile to use
+
 #>
 
 function Invoke-SqlBackupToS3 {
@@ -113,8 +116,17 @@ function Invoke-SqlBackupToS3 {
 
 		[parameter()]
 		[switch]
-		$CopyOnly
+		$CopyOnly,
+
+		[parameter()]
+		[string]
+		$AWSProfileName
 	)
+
+	if ($AWSProfileName) {
+		Write-Verbose "Switching to AWS profile $AWSProfileName"
+		Set-AWSCredentials -ProfileName $AWSProfileName
+	}
 
 	Write-Verbose "Saving SqlServer StatementTimeout ($($SqlServer.ConnectionContext.StatementTimeout))"
 	$StatementTimeout = $SqlServer.ConnectionContext.StatementTimeout
@@ -176,10 +188,9 @@ function Invoke-SqlBackupToS3 {
 		throw "S3 object already exists: $BucketName/$Key"
 	}
 
-	Write-Verbose "Connecting to S3 bucket"
-	$Bucket = Get-S3Bucket -BucketName $BucketName -Region $Region
-	if ($Bucket) {
-		Write-Verbose "Connected to bucket $($Bucket.BucketName)"
+	Write-Verbose "Checking to see if S3 bucket exists"
+	if (Test-S3Bucket -BucketName $BucketName -Region $Region) {
+		Write-Verbose "Connected to bucket $($BucketName)"
 	}
 	else {
 		throw "Unable to connect to bucket $BucketName"

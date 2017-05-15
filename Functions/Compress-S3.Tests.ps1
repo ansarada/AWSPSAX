@@ -73,19 +73,23 @@ Describe "Compress-S3" {
 
 		Compress-S3 -Src 'TestDrive:\TestDir' -BucketName 'TestBucket' -KeyPrefix "KeyPrefix"
 
+		$RealS3Dir = Join-Path "KeyPrefix" $(Resolve-Path "$TestDrive" -Relative).Substring(1)
+		$RealS3ZipKey = ($RealS3Dir + "\TestDir.zip").Replace('\', '/')
+		$RealZipFilePath = Join-Path $(Resolve-Path "$TestDrive") "TestDir.zip"
+
 		It "Creates S3key files which contains pointer" {
-			"TestDrive:\TestDir.s3key" | Should ContainExactly "KeyPrefix/TestDir.zip"
+			"TestDrive:\TestDir.s3key" | Should ContainExactly "$RealS3ZipKey"
 		}
 
 		It "Calls Write-Zip to create archive" {
 			Assert-MockCalled Write-Zip 1 -ParameterFilter {
-			 	$OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
+				 $OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
 			}
 		}
 
 		It "Calls Write-S3Object to upload archive" {
 			Assert-MockCalled Write-S3Object 1 -ParameterFilter {
-				$BucketName -eq "TestBucket" -and $Key -eq "KeyPrefix/TestDir.zip" -and $File -eq 'TestDir.zip'
+				$BucketName -eq "TestBucket" -and $Key -eq $RealS3ZipKey -and $File -eq $RealZipFilePath
 			}
 		}
 
@@ -109,8 +113,12 @@ Describe "Compress-S3" {
 
 		Compress-S3 -Src 'TestDrive:\TestFile.txt' -BucketName 'TestBucket' -KeyPrefix "KeyPrefix"
 
+		$RealS3Dir = Join-Path "KeyPrefix" $(Resolve-Path "$TestDrive" -Relative).Substring(1)
+		$RealS3FileKey = ($RealS3Dir + "\TestFile.txt").Replace('\', '/')
+		$RealTextFilePath = Join-Path $(Resolve-Path "$TestDrive") "TestFile.txt"
+
 		It "Creates S3key files which contains pointer" {
-			"TestDrive:\TestFile.txt.s3key" | Should ContainExactly "KeyPrefix/TestFile.txt"
+			"TestDrive:\TestFile.txt.s3key" | Should ContainExactly "$RealS3FileKey"
 		}
 
 		It "Does not call Write-Zip" {
@@ -119,7 +127,7 @@ Describe "Compress-S3" {
 
 		It "Calls Write-S3Object to upload archive" {
 			Assert-MockCalled Write-S3Object 1 -ParameterFilter {
-				$BucketName -eq "TestBucket" -and $Key -eq "KeyPrefix/TestFile.txt" -and $File -eq 'TestFile.txt'
+				$BucketName -eq "TestBucket" -and $Key -eq $RealS3FileKey -and $File -eq $RealTextFilePath
 			}
 		}
 
@@ -147,21 +155,26 @@ Describe "Compress-S3" {
 		)
 		$Src | Compress-S3 -BucketName 'TestBucket' -KeyPrefix "KeyPrefix"
 
+		$RealS3Dir = Join-Path "KeyPrefix" $(Resolve-Path "$TestDrive" -Relative).Substring(1)
+		$RealS3File1Key = ($RealS3Dir + "\TestFile1.txt").Replace('\', '/')
+		$RealS3File2Key = ($RealS3Dir + "\TestFile2.txt").Replace('\', '/')
+		$RealS3ZipKey = ($RealS3Dir + "\TestDir.zip").Replace('\', '/')
+
 		It "Creates S3key file for TestFile1.txt which contains pointer" {
-			"TestDrive:\TestFile1.txt.s3key" | Should ContainExactly "KeyPrefix/TestFile1.txt"
+			"TestDrive:\TestFile1.txt.s3key" | Should ContainExactly "$RealS3File1Key"
 		}
 
 		It "Creates S3key file for TestFile2.txt which contains pointer" {
-			"TestDrive:\TestFile2.txt.s3key" | Should ContainExactly "KeyPrefix/TestFile2.txt"
+			"TestDrive:\TestFile2.txt.s3key" | Should ContainExactly "$RealS3File2Key"
 		}
 
 		It "Creates S3key file for TestDir which contains pointer" {
-			"TestDrive:\TestDir.s3key" | Should ContainExactly "KeyPrefix/TestDir.zip"
+			"TestDrive:\TestDir.s3key" | Should ContainExactly "$RealS3ZipKey"
 		}
 
 		It "Calls Write-Zip once to create archive" {
 			Assert-MockCalled Write-Zip 1 -ParameterFilter {
-			 	$OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
+				 $OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
 			}
 		}
 
@@ -197,23 +210,29 @@ Describe "Compress-S3" {
 			"TestDrive:\TestFile2.txt",
 			"TestDrive:\TestDir"
 		)
+
 		Compress-S3 -Src $Src -BucketName 'TestBucket' -KeyPrefix "KeyPrefix"
 
+		$RealS3Dir = Join-Path "KeyPrefix" $(Resolve-Path "$TestDrive" -Relative).Substring(1)
+		$RealS3File1Key = ($RealS3Dir + "\TestFile1.txt").Replace('\', '/')
+		$RealS3File2Key = ($RealS3Dir + "\TestFile2.txt").Replace('\', '/')
+		$RealS3ZipKey = ($RealS3Dir + "\TestDir.zip").Replace('\', '/')
+
 		It "Creates S3key file for TestFile1.txt which contains pointer" {
-			"TestDrive:\TestFile1.txt.s3key" | Should ContainExactly "KeyPrefix/TestFile1.txt"
+			"TestDrive:\TestFile1.txt.s3key" | Should ContainExactly "$RealS3File1Key"
 		}
 
 		It "Creates S3key file for TestFile2.txt which contains pointer" {
-			"TestDrive:\TestFile2.txt.s3key" | Should ContainExactly "KeyPrefix/TestFile2.txt"
+			"TestDrive:\TestFile2.txt.s3key" | Should ContainExactly "$RealS3File2Key"
 		}
 
 		It "Creates S3key file for TestDir which contains pointer" {
-			"TestDrive:\TestDir.s3key" | Should ContainExactly "KeyPrefix/TestDir.zip"
+			"TestDrive:\TestDir.s3key" | Should ContainExactly "$RealS3ZipKey"
 		}
 
 		It "Calls Write-Zip once to create archive" {
 			Assert-MockCalled Write-Zip 1 -ParameterFilter {
-			 	$OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
+				 $OutputPath -eq "TestDrive:\TestDir.zip" -and $LiteralPath -eq "TestDrive:\TestDir"
 			}
 		}
 
@@ -229,6 +248,38 @@ Describe "Compress-S3" {
 
 		It "Removes the archive file" {
 			"TestDrive:\TestDir.zip" | Should not exist
+		}
+	}
+
+	Context "No AWS profile provided" {
+		It "should not call Set-AWSCredentials" {
+			Mock Test-S3Bucket { return $true }
+			Mock Write-Zip {}
+			Mock Write-S3Object {}
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			Set-Content "TestDrive:\TestFile.txt" -Value "TestFile Contents"
+
+			Compress-S3 -Src 'TestDrive:\TestFile.txt' -BucketName 'TestBucket' -KeyPrefix "KeyPrefix"
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 0
+		}
+	}
+
+	Context "AWS profile provided" {
+		It "should call Set-AWSCredentials" {
+			Mock Test-S3Bucket { return $true }
+			Mock Write-Zip {}
+			Mock Write-S3Object {}
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			Set-Content "TestDrive:\TestFile.txt" -Value "TestFile Contents"
+
+			Compress-S3 -Src 'TestDrive:\TestFile.txt' -BucketName 'TestBucket' -KeyPrefix "KeyPrefix" -AWSProfileName 'Profile'
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 1
 		}
 	}
 }

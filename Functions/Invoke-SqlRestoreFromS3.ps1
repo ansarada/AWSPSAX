@@ -38,6 +38,9 @@
 	.Parameter Force
 	Refer to Invoke-SqlBackup (http://files.powershellstation.com/SQLPSX/Invoke-SqlBackup.htm) and Initialize (http://technet.microsoft.com/en-us/library/microsoft.sqlserver.management.smo.backup.initialize.aspx).
 
+	.Parameter AWSProfileName
+		Name of AWS profile to use
+
 #>
 
 Push-Location
@@ -97,10 +100,17 @@ function Invoke-SqlRestoreFromS3 {
 
 		[parameter()]
 		[string]
-		$FilenameSuffix
+		$FilenameSuffix,
+
+		[parameter()]
+		[string]
+		$AWSProfileName
 	)
 
-    Write-Verbose "Importing module SQLServer"
+	if ($AWSProfileName) {
+		Write-Verbose "Switching to AWS profile $AWSProfileName"
+		Set-AWSCredentials -ProfileName $AWSProfileName
+	}
 
 	Write-Verbose "Saving SqlServer StatementTimeout ($($SqlServer.ConnectionContext.StatementTimeout))"
 	$StatementTimeout = $SqlServer.ConnectionContext.StatementTimeout
@@ -115,7 +125,7 @@ function Invoke-SqlRestoreFromS3 {
 			Write-Verbose "No Region specified, using default $Region"
 		}
 		else {
-		    throw "No Region specified and no default set"
+			throw "No Region specified and no default set"
 		}
 	}
 	else {

@@ -12,6 +12,9 @@
 .PARAMETER KeyPrefix
 	The prefix to add to the key of the objects uploaded
 
+.PARAMETER AWSProfileName
+	Name of AWS profile to use
+
 .INPUTS
 	The set of paths to create if they don't exist
 
@@ -31,10 +34,19 @@ function Compress-S3 {
 
 		[parameter()]
 		[String]
-		$KeyPrefix
+		$KeyPrefix,
+
+		[parameter()]
+		[string]
+		$AWSProfileName
 	)
 
 	begin {
+		if ($AWSProfileName) {
+			Write-Verbose "Setting AWS profile to $AWSProfileName"
+			Set-AWSCredentials -ProfileName $AWSProfileName
+		}
+
 		Write-Verbose "Checking that bucket $BucketName exists"
 		if (Test-S3Bucket -BucketName $BucketName) {
 			Write-Verbose "Bucket $BucketName exists"

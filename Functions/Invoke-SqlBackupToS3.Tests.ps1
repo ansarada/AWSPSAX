@@ -8,7 +8,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -42,7 +41,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return $null}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -65,7 +63,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -96,7 +93,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -120,7 +116,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
 		Mock Test-S3Bucket { return $true }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
 
@@ -143,7 +138,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return $null }
 		Mock Test-S3Bucket { return $false }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -166,7 +160,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Disabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -189,7 +182,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Disabled} }
 		Mock Get-S3Object { return $null }
@@ -218,7 +210,6 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return @{BucketName = 'BucketName'} }
 		Mock Test-S3Bucket { return $true }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
@@ -247,8 +238,7 @@ Describe "Invoke-SqlBackupToS3" {
 		Mock Get-DefaultAWSRegion { return 'default-region'}
 		Mock Invoke-SqlBackup { return $null }
 		Mock Write-S3Object { return $null }
-		Mock Get-S3Bucket { return $null }
-		Mock Test-S3Bucket { return $true }
+		Mock Test-S3Bucket { return $false }
 		Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Enabled} }
 		Mock Get-S3Object { return 'Object' }
 
@@ -263,6 +253,59 @@ Describe "Invoke-SqlBackupToS3" {
 
 		It "Throws an exception" {
 			{ Invoke-SqlBackupToS3 @Parameters } | Should Throw
+		}
+	}
+
+	Context "No AWS profile provided" {
+		It "should not call Set-AWSCredentials" {
+			Mock Get-DefaultAWSRegion { return 'default-region' }
+			Mock Invoke-SqlBackup { return $null }
+			Mock Write-S3Object { return $null }
+			Mock Test-S3Bucket { return $true }
+			Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Disabled} }
+			Mock Get-S3Object { return $null }
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			New-Item 'TestDrive:\DefaultBackupPath' -Type directory
+
+			$Parameters = @{
+				SqlServer = @{BackupDirectory = 'TestDrive:\DefaultBackupPath'};
+				DBName = 'DatabaseName';
+				BucketName = 'BucketName';
+				Key = 'DatabaseName.bak'
+			}
+
+			Invoke-SqlBackupToS3 @Parameters
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 0
+		}
+	}
+
+	Context "AWS profile provided" {
+		It "should not call Set-AWSCredentials" {
+			Mock Get-DefaultAWSRegion { return 'default-region' }
+			Mock Invoke-SqlBackup { return $null }
+			Mock Write-S3Object { return $null }
+			Mock Test-S3Bucket { return $true }
+			Mock Get-S3BucketVersioning { return @{Status = [Amazon.S3.VersionStatus]::Disabled} }
+			Mock Get-S3Object { return $null }
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			New-Item 'TestDrive:\DefaultBackupPath' -Type directory
+
+			$Parameters = @{
+				SqlServer = @{BackupDirectory = 'TestDrive:\DefaultBackupPath'};
+				DBName = 'DatabaseName';
+				BucketName = 'BucketName';
+				Key = 'DatabaseName.bak';
+				AWSProfileName = 'Profile'
+			}
+
+			Invoke-SqlBackupToS3 @Parameters
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 1
 		}
 	}
 }

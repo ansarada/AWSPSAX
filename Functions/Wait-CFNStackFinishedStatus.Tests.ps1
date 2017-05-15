@@ -24,4 +24,26 @@ Describe "Wait-CFNStackFinishedStatus" {
 			$result.StackName | Should Be "StackName1"
 		}
 	}
+
+	Context "No AWS profile provided" {
+		It "should not call Set-AWSCredentials" {
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			Wait-CFNStackFinishedStatus -StackName 'StackName1'
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 0
+		}
+	}
+
+	Context "AWS profile provided" {
+		It "should not call Set-AWSCredentials" {
+
+			Mock Set-AWSCredentials {} -Verifiable
+
+			Wait-CFNStackFinishedStatus -StackName 'StackName1' -AWSProfileName 'Profile'
+
+			Assert-MockCalled Set-AWSCredentials -Exactly 1
+		}
+	}
 }

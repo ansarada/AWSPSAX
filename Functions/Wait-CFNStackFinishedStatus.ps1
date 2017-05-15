@@ -10,6 +10,9 @@
 	.PARAMETER Timeout
 	How long in seconds to wait for the stack to reach a finished state
 
+	.PARAMETER AWSProfileName
+		Name of AWS profile to use
+
 	.PARAMETER CheckInterval
 	How often to re-check the status of the stack
 #>
@@ -29,8 +32,17 @@ function Wait-CFNStackFinishedStatus {
 
 		[parameter()]
 		[int32]
-		$CheckInterval = 15
+		$CheckInterval = 15,
+
+		[parameter()]
+		[string]
+		$AWSProfileName
 	)
+
+	if ($AWSProfileName) {
+		Write-Verbose "Switching to AWS profile $AWSProfileName"
+		Set-AWSCredentials -ProfileName $AWSProfileName
+	}
 
 	$Stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
