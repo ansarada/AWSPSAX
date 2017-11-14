@@ -1,6 +1,5 @@
 #requires -Version 4 -Modules AWSPowerShell
 <#
-
 .SYNOPSIS
     Will create an Ingress rule for cross account access
     
@@ -50,7 +49,7 @@ function Get-SecurityGroupByFilter {
         Write-Verbose "Found security group $($SecurityGroup.GroupId)"
         return $SecurityGroup
     }
-    catch {
+    catch {        
         throw "Failed to locate Security Group $SecurityGroupName in environment $CICDEnvironment using AwsProfile $AwsProfile"
     }
 }
