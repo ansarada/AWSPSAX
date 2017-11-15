@@ -43,8 +43,9 @@ function Get-SecurityGroupByFilter {
             ProfileName = $AwsProfile
         }
         $SecurityGroup = Get-EC2SecurityGroup @SecurityGroupParameters
-        if ($SecurityGroup.count -ne 1) {
-            throw "$($SecurityGroup.count) Security Groups found"
+        $SecurityGroupMeasure = $SecurityGroup | measure
+        if ($SecurityGroupMeasure.count -ne 1) {
+            throw "$($SecurityGroupMeasure.count) Security Groups found"
         }
         Write-Verbose "Found security group $($SecurityGroup.GroupId)"
         return $SecurityGroup
