@@ -74,4 +74,24 @@ Describe "Get-LatestEC2ImageByName" {
 			Assert-MockCalled Set-AWSCredentials -Exactly 1
 		}
 	}
+
+	Context "Search for owner specified amis" {
+		$amis = @(
+			(New-Object Amazon.EC2.Model.Image),
+			(New-Object Amazon.EC2.Model.Image),
+			(New-Object Amazon.EC2.Model.Image)
+		)
+		$amis[0].Name = 'Name0'
+		$amis[0].creationdate = '2017-01-13T19:27:48.000Z'
+
+		$amis[1].Name = 'Name1'
+		$amis[1].creationdate = '2018-01-13T19:27:48.000Z'
+
+		$amis[2].Name = 'Name2'
+		$amis[2].creationdate = '2016-01-13T19:27:48.000Z'
+		Mock Get-EC2Image { return $amis } -ParameterFilter { $Owner -eq "amazon" }
+		It "returns AMI" {
+			Get-LatestEC2ImageByName -Pattern "Name*" -Owner amazon | Should be $amis[1]
+		}
+	}
 }

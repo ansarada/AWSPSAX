@@ -33,7 +33,12 @@ function Get-LatestEC2ImageByName {
 		# Name of AWS profile to use
 		[parameter()]
 		[string]
-		$AWSProfileName
+		$AWSProfileName,
+
+		# Search for AWS owned images
+		[parameter()]
+		[string]
+		$Owner
 	)
 
 	if ($AWSProfileName) {
@@ -41,11 +46,24 @@ function Get-LatestEC2ImageByName {
 		Set-AWSCredentials -ProfileName $AWSProfileName
 	}
 
-	Write-Verbose "Searching for AMI with name matching $Pattern executable by $ExecutableUser"
+	$params = @{
+		filter = @{
+			Name = "name"
+			Value = "$($Pattern)*"
+		}
+	}
 
-	$amis = Get-EC2Image -ExecutableUser $ExecutableUser |
-		where { $_.Name -like "$Pattern*" } |
-		sort -Property Name -Descending
+	if ($Owner){
+		Write-Verbose "Searching for AMI with name matching $Pattern owned by $Owner"
+		$params.Owner = $Owner
+		$sortObject = 'creationdate'
+	}
+	else{
+		Write-Verbose "Searching for AMI with name matching $Pattern executable by $ExecutableUser"
+		$params.ExecutableUser = $ExecutableUser
+		$sortObject = 'Name'
+	}
+	$amis = Get-EC2Image @params | sort-object -Property $sortObject -Descending
 
 	if ($amis -eq $null) {
 		throw 'Found no AMIs matching pattern $Pattern'
