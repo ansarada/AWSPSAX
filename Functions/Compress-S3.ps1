@@ -107,7 +107,8 @@ function Compress-S3 {
 			$WriteS3ObjectParams = @{
 				BucketName = $BucketName;
 				Key = $S3Key;
-				File = $UploadFile.FullName
+				File = $UploadFile.FullName;
+				CannedAclName = "bucket-owner-full-control"
 			}
 			Write-Debug "Uploading $($WriteS3ObjectParams.File) to bucket $($WriteS3ObjectParams.BucketName) under key $($WriteS3ObjectParams.Key)"
 			Write-S3Object @WriteS3ObjectParams
